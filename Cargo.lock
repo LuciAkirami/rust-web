@@ -97,6 +97,8 @@ dependencies = [
  "axum",
  "httpc-test",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
