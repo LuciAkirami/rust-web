@@ -14,7 +14,9 @@ pub use self::error::{Error, Result};
 mod web;
 use web::routes_login::route_login;
 
+use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
+
 use tracing::info;
 use tracing::instrument;
 
@@ -32,6 +34,8 @@ async fn main() {
         .merge(route_login())
         // adding the middleware / layer
         .layer(middleware::map_response(main_respone_mapper))
+        // adding cookie middleware
+        .layer(CookieManagerLayer::new())
         .fallback_service(routes_static());
 
     // Define the network address (IP and port) to bind the server to.
