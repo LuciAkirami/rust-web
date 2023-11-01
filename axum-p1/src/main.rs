@@ -6,6 +6,13 @@ use axum::{
     routing::{get, get_service},
     Router,
 };
+
+mod error;
+pub use self::error::{Error, Result};
+
+mod web;
+use web::routes_login::route_login;
+
 use tower_http::services::ServeDir;
 use tracing::info;
 use tracing::instrument;
@@ -21,6 +28,7 @@ async fn main() {
     // Create an Axum router for defining HTTP routes and their handlers.
     let routes = Router::new()
         .merge(routes_hello())
+        .merge(route_login())
         .fallback_service(routes_static());
 
     // Define the network address (IP and port) to bind the server to.
@@ -47,7 +55,7 @@ fn routes_static() -> Router {
 async fn handle_request(Query(params): Query<HashMap<String, String>>) -> impl IntoResponse {
     // Log that client has hit the "/hello" route
     info!("Handling Hello");
-    println!("{:?}", params);
+    println!("Parameters: {:?}", params);
     Html("<p>Henlo Warudoo</p>")
 }
 
