@@ -1,10 +1,12 @@
-use std::net::SocketAddr;
+use std::{collections::HashMap, net::SocketAddr};
 
 use axum::{
+    extract::{Path, Query},
     response::{Html, IntoResponse},
-    routing::get,
+    routing::{get, get_service},
     Router,
 };
+use tower_http::services::ServeDir;
 use tracing::info;
 use tracing::instrument;
 
@@ -17,7 +19,9 @@ async fn main() {
         .init();
 
     // Create an Axum router for defining HTTP routes and their handlers.
-    let routes = Router::new().route("/hello", get(handle_request));
+    let routes = Router::new()
+        .merge(routes_hello())
+        .fallback_service(routes_static());
 
     // Define the network address (IP and port) to bind the server to.
     let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
@@ -30,9 +34,26 @@ async fn main() {
         .unwrap();
 }
 
+fn routes_hello() -> Router {
+    Router::new()
+        .route("/hello", get(handle_request))
+        .route("/hello/:name", get(handle_request2))
+}
+
+fn routes_static() -> Router {
+    Router::new().nest_service("/", get_service(ServeDir::new("./")))
+}
 #[instrument]
-async fn handle_request() -> impl IntoResponse {
+async fn handle_request(Query(params): Query<HashMap<String, String>>) -> impl IntoResponse {
     // Log that client has hit the "/hello" route
     info!("Handling Hello");
+    println!("{:?}", params);
     Html("<p>Henlo Warudoo</p>")
+}
+
+#[instrument]
+async fn handle_request2(Path(name): Path<String>) -> impl IntoResponse {
+    // Log that client has hit the "/hello" route
+    info!("Handling Hello with name in Path");
+    Html(format!("<p>Henlo {name}</p>"))
 }
