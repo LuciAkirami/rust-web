@@ -2,7 +2,8 @@ use std::{collections::HashMap, net::SocketAddr};
 
 use axum::{
     extract::{Path, Query},
-    response::{Html, IntoResponse},
+    middleware,
+    response::{Html, IntoResponse, Response},
     routing::{get, get_service},
     Router,
 };
@@ -29,6 +30,8 @@ async fn main() {
     let routes = Router::new()
         .merge(routes_hello())
         .merge(route_login())
+        // adding the middleware / layer
+        .layer(middleware::map_response(main_respone_mapper))
         .fallback_service(routes_static());
 
     // Define the network address (IP and port) to bind the server to.
@@ -51,6 +54,16 @@ fn routes_hello() -> Router {
 fn routes_static() -> Router {
     Router::new().nest_service("/", get_service(ServeDir::new("./")))
 }
+
+// tower middleware, this middleware will take the Reponse and do something
+async fn main_respone_mapper(res: Response) -> Response {
+    println!();
+    // uncomment to check how the http reponse looks
+    // println!("{res:#?}");
+    // println!();
+    res
+}
+
 #[instrument]
 async fn handle_request(Query(params): Query<HashMap<String, String>>) -> impl IntoResponse {
     // Log that client has hit the "/hello" route
