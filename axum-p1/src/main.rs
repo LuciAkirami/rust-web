@@ -9,7 +9,11 @@ use axum::{
 };
 
 mod error;
+use crate::models::ModelController;
+
 pub use self::error::{Error, Result};
+
+pub mod models;
 
 mod web;
 use web::routes_login::route_login;
@@ -22,16 +26,19 @@ use tracing::instrument;
 
 // The entry point of the program, an async main function.
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     // Initialize the tracing subscriber for logging.
     tracing_subscriber::fmt()
         //.json()  // This line is commented out; it's an option to format logs as JSON.
         .init();
 
+    let mc = ModelController::new().await?;
+
     // Create an Axum router for defining HTTP routes and their handlers.
     let routes = Router::new()
         .merge(routes_hello())
         .merge(route_login())
+        .nest_service("/api", web::routes_crud::routes(mc.clone()))
         // adding the middleware / layer
         .layer(middleware::map_response(main_respone_mapper))
         // adding cookie middleware
@@ -47,6 +54,8 @@ async fn main() {
         .serve(routes.into_make_service())
         .await
         .unwrap();
+
+    Ok(())
 }
 
 fn routes_hello() -> Router {

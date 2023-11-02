@@ -8,6 +8,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Debug)]
 pub enum Error {
     LoginFail,
+    NoTicketID { id: usize },
 }
 
 impl IntoResponse for Error {
