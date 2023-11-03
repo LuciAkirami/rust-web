@@ -34,11 +34,14 @@ async fn main() -> Result<()> {
 
     let mc = ModelController::new().await?;
 
+    let route_apis = web::routes_crud::routes(mc.clone())
+        .route_layer(middleware::from_fn(web::mw_auth::mw_require_auth));
+
     // Create an Axum router for defining HTTP routes and their handlers.
     let routes = Router::new()
         .merge(routes_hello())
         .merge(route_login())
-        .nest_service("/api", web::routes_crud::routes(mc.clone()))
+        .nest_service("/api", route_apis)
         // adding the middleware / layer
         .layer(middleware::map_response(main_respone_mapper))
         // adding cookie middleware
