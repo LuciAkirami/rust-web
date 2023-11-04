@@ -6,11 +6,12 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 //Key Idea here: NEVER send internal details about the error to the client
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Error {
     LoginFail,
     AuthFailedNoToken,
     AuthFailedWrongTokenFormat,
+    AuthFailCtxNotInRequest,
     NoTicketID { id: usize },
 }
 

@@ -9,12 +9,13 @@ use axum::{
 };
 
 mod error;
-use crate::models::ModelController;
+use crate::{models::ModelController, web::mw_auth::mw_ctx_resolver};
 
 pub use self::error::{Error, Result};
 
 pub mod models;
 
+mod ctx;
 mod web;
 use web::routes_login::route_login;
 
@@ -44,6 +45,8 @@ async fn main() -> Result<()> {
         .nest_service("/api", route_apis)
         // adding the middleware / layer
         .layer(middleware::map_response(main_respone_mapper))
+        // this middle takes the cookies from the previous middleware for resolving ctx
+        .layer(middleware::from_fn_with_state(mc.clone(), mw_ctx_resolver))
         // adding cookie middleware
         .layer(CookieManagerLayer::new())
         .fallback_service(routes_static());
