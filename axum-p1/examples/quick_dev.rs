@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
     hc.do_post(
         "/api/login",
         json!({
-            "username":"kirami",
+            "username":"akirami",
             "password":"password"
         }),
     )
@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
         "/api/tickets",
         json!(
             {
-                "title": "Learn Rustaceans"
+                "title": "Become Rustaceans"
             }
         ),
     )

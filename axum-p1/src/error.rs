@@ -1,5 +1,6 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use tracing::error;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -8,12 +9,14 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Debug)]
 pub enum Error {
     LoginFail,
-    AuthenticanFailed,
+    AuthFailedNoToken,
+    AuthFailedWrongTokenFormat,
     NoTicketID { id: usize },
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
+        error!(Error=?self);
         (StatusCode::INTERNAL_SERVER_ERROR, "UNHANDLED_CLIENT_ERROR").into_response()
     }
 }
