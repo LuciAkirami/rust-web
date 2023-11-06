@@ -2,20 +2,25 @@ use std::{collections::HashMap, net::SocketAddr};
 
 use axum::{
     extract::{Path, Query},
+    http::{Method, Uri},
     middleware,
     response::{Html, IntoResponse, Response},
     routing::{get, get_service},
-    Router,
+    Json, Router,
 };
+use ctx::Ctx;
+use serde_json::json;
+use uuid::Uuid;
 
 mod error;
-use crate::{models::ModelController, web::mw_auth::mw_ctx_resolver};
+use crate::{log::log_request, models::ModelController, web::mw_auth::mw_ctx_resolver};
 
 pub use self::error::{Error, Result};
 
 pub mod models;
 
 mod ctx;
+mod log;
 mod web;
 use web::routes_login::route_login;
 
@@ -75,12 +80,43 @@ fn routes_static() -> Router {
 }
 
 // tower middleware, this middleware will take the Reponse and do something
-async fn main_respone_mapper(res: Response) -> Response {
-    println!();
+async fn main_respone_mapper(
+    ctx: Option<Ctx>,
+    uri: Uri,
+    req_method: Method,
+    res: Response,
+) -> Response {
     // uncomment to check how the http reponse looks
     // println!("{res:#?}");
     // println!();
-    res
+    let uuid = Uuid::new_v4();
+
+    // -- Get eventual response error
+    let service_error = res.extensions().get::<Error>();
+    let client_error = service_error.map(|se| se.client_status_and_error());
+
+    // -- If Client error, build new response
+    let error_response = client_error.as_ref().map(|(statuscode, client_error)| {
+        let client_err_body = json!({
+            "error":{
+                "type":client_error.as_ref(),
+                "req_uuid":uuid.to_string(),
+            }
+        });
+        info!(?client_err_body, "Client Error Body");
+        println!("{client_err_body:?}");
+        // we are using *statuscode because, statuscode is referenced, hence we need to deref it
+        (*statuscode, Json(client_err_body)).into_response()
+        // the below still works because axum::StatusCode implements Clone, hence when we deref it,
+        // it gets clones and thus we can still use the var statuscode
+        // println!("{statuscode:?}");
+    });
+    // info!("Server log line - {uuid} - Error: {service_error:?}");
+    let client_error = client_error.unzip().1;
+    let _ = log_request(uuid, req_method, uri, ctx, service_error, client_error).await;
+
+    println!();
+    error_response.unwrap_or(res)
 }
 
 #[instrument]
