@@ -1,4 +1,4 @@
 [workspace]
-members = ["axum-p1", "simple-tracing"]
+members = ["axum-*", "simple-tracing"]
 
 resolver = "2"
